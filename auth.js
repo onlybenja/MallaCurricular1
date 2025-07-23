@@ -1,158 +1,214 @@
-// Asegurar que exista el usuario admin
-if (!localStorage.getItem('users')) {
-    const initialUsers = [{
-        username: 'admin',
-        password: 'admin',
-        isAdmin: true,
-        progress: {}
-    }];
-    localStorage.setItem('users', JSON.stringify(initialUsers));
-}
-
-// Función simple para obtener usuarios
-function getUsers() {
-    return JSON.parse(localStorage.getItem('users') || '[]');
-}
-
-// Función simple para guardar usuarios
-function saveUsers(users) {
-    localStorage.setItem('users', JSON.stringify(users));
-}
-
-// Función para guardar el progreso de un usuario
-function saveUserProgress(progress) {
-    const currentUser = localStorage.getItem('currentUser');
-    if (!currentUser) return;
-
-    const users = getUsers();
-    const userIndex = users.findIndex(u => u.username === currentUser);
-    if (userIndex !== -1) {
-        users[userIndex].progress = progress;
-        saveUsers(users);
+// Función para cargar las preferencias del usuario
+function loadUserPreferences(username) {
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const user = users.find(u => u.username === username);
+    
+    if (user) {
+        // Cargar colores
+        if (user.colors) {
+            document.documentElement.style.setProperty('--color-primary', user.colors.primary);
+            document.documentElement.style.setProperty('--color-primary-dark', user.colors.secondary);
+            
+            // Convertir el color primario a RGB
+            const rgb = hexToRgb(user.colors.primary);
+            if (rgb) {
+                document.documentElement.style.setProperty('--color-primary-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
+            }
+        }
+        
+        // Cargar fuente
+        if (user.font) {
+            document.documentElement.style.setProperty('--font-family', `'${user.font}', sans-serif`);
+        }
     }
 }
 
-// Función para obtener el progreso del usuario actual
-function getCurrentUserProgress() {
-    const currentUser = localStorage.getItem('currentUser');
-    if (!currentUser) return {};
-
-    const users = getUsers();
-    const user = users.find(u => u.username === currentUser);
-    return user ? user.progress || {} : {};
+// Función auxiliar para convertir hex a rgb
+function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
 }
 
-// Configurar eventos cuando el DOM esté listo
-document.addEventListener('DOMContentLoaded', () => {
-    const mainContent = document.getElementById('mainContent');
-    const loginModal = document.getElementById('loginModal');
-    const adminButton = document.getElementById('adminButton');
-    const logoutButton = document.getElementById('logoutButton');
-    const userDisplay = document.getElementById('userDisplay');
+// Función para actualizar el nombre de usuario en la interfaz
+function updateUserDisplay(username) {
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const user = users.find(u => u.username === username);
+    const displayName = user && user.fullName ? user.fullName : username;
 
-    // Manejar el formulario de login
+    document.getElementById('userDisplay').textContent = displayName;
+    document.getElementById('accountName').textContent = displayName;
+}
+
+// Función para manejar el inicio de sesión
+function handleLogin(username, password) {
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const user = users.find(u => u.username === username && u.password === password);
+    
+    if (user) {
+        localStorage.setItem('currentUser', username);
+        document.getElementById('loginModal').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'block';
+        
+        // Mostrar/ocultar botón de admin
+        const adminButton = document.getElementById('adminButton');
+        if (adminButton) {
+            adminButton.style.display = user.isAdmin ? 'flex' : 'none';
+            adminButton.onclick = () => window.location.href = 'admin.html';
+        }
+
+        // Actualizar nombre en la interfaz
+        updateUserDisplay(username);
+        
+        // Cargar preferencias del usuario
+        loadUserPreferences(username);
+        loadSavedProgress();
+        return true;
+    }
+    return false;
+}
+
+// Función para verificar si hay un usuario logueado
+function checkLoggedInUser() {
+    const currentUser = localStorage.getItem('currentUser');
+    if (!currentUser) {
+        document.getElementById('loginModal').style.display = 'flex';
+        document.getElementById('mainContent').style.display = 'none';
+        return false;
+    }
+
+    // Cargar preferencias del usuario actual
+    loadUserPreferences(currentUser);
+    
+    // Actualizar nombre en la interfaz
+    updateUserDisplay(currentUser);
+
+    return true;
+}
+
+// Función para cerrar sesión
+function handleLogout() {
+    localStorage.removeItem('currentUser');
+    window.location.reload();
+}
+
+// Inicializar usuario admin por defecto si no existe ningún usuario
+function initializeDefaultAdmin() {
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    if (users.length === 0) {
+        users.push({
+            username: 'admin',
+            fullName: 'Administrador del Sistema',
+            password: 'admin',
+            isAdmin: true,
+            progress: {},
+            colors: {
+                primary: '#FFB6DF',
+                secondary: '#FF69B4'
+            },
+            font: 'Poppins'
+        });
+        localStorage.setItem('users', JSON.stringify(users));
+    }
+}
+
+// Event Listeners
+document.addEventListener('DOMContentLoaded', () => {
+    initializeDefaultAdmin();
+    
+    // Login form
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
         loginForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            
-            const username = document.getElementById('loginUsername').value.trim();
+            const username = document.getElementById('loginUsername').value;
             const password = document.getElementById('loginPassword').value;
-
-            const users = getUsers();
-            const user = users.find(u => u.username === username && u.password === password);
-
-            if (user) {
-                // Guardar sesión
-                localStorage.setItem('currentUser', username);
-                
-                // Mostrar contenido principal
-                loginModal.style.display = 'none';
-                mainContent.style.display = 'block';
-                
-                // Mostrar nombre de usuario
-                userDisplay.textContent = `Usuario: ${username}`;
-                
-                // Mostrar botón de admin si corresponde
-                if (user.isAdmin) {
-                    adminButton.style.display = 'inline-block';
-                } else {
-                    adminButton.style.display = 'none';
-                }
-
-                // Cargar el progreso del usuario
-                const userProgress = user.progress || {};
-                updateProgress(userProgress);
+            
+            if (handleLogin(username, password)) {
+                loginForm.reset();
             } else {
                 alert('Usuario o contraseña incorrectos');
             }
         });
     }
 
-    // Manejar el botón de admin
+    // Profile menu
+    const profileButton = document.getElementById('profileButton');
+    const profileMenu = document.querySelector('.profile-menu');
+    
+    if (profileButton && profileMenu) {
+        profileButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            profileMenu.classList.toggle('active');
+        });
+    }
+
+    // Cerrar menú al hacer click fuera
+    document.addEventListener('click', (e) => {
+        if (profileMenu && !profileMenu.contains(e.target)) {
+            profileMenu.classList.remove('active');
+        }
+    });
+
+    // Botón de logout
+    const logoutButton = document.getElementById('logoutButton');
+    if (logoutButton) {
+        logoutButton.addEventListener('click', handleLogout);
+    }
+
+    // Botón de personalizar
+    const customizeButton = document.getElementById('customizeButton');
+    const colorModal = document.getElementById('colorModal');
+    
+    if (customizeButton && colorModal) {
+        customizeButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            colorModal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            if (profileMenu) {
+                profileMenu.classList.remove('active');
+            }
+        });
+    }
+
+    // Cerrar modal de colores
+    const closeColorModal = document.getElementById('closeColorModal');
+    if (closeColorModal && colorModal) {
+        closeColorModal.addEventListener('click', () => {
+            colorModal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        });
+    }
+
+    // Botón de admin
+    const adminButton = document.getElementById('adminButton');
     if (adminButton) {
         adminButton.addEventListener('click', () => {
             window.location.href = 'admin.html';
         });
     }
 
-    // Manejar el botón de logout
-    if (logoutButton) {
-        logoutButton.addEventListener('click', () => {
-            localStorage.removeItem('currentUser');
-            window.location.reload();
-        });
-    }
-
-    // Verificar si hay sesión activa al cargar
-    const currentUser = localStorage.getItem('currentUser');
-    if (currentUser) {
-        const users = getUsers();
-        const user = users.find(u => u.username === currentUser);
+    // Verificar usuario logueado
+    if (checkLoggedInUser()) {
+        const currentUser = localStorage.getItem('currentUser');
+        updateUserDisplay(currentUser);
         
-        if (user) {
-            loginModal.style.display = 'none';
-            mainContent.style.display = 'block';
-            userDisplay.textContent = `Usuario: ${currentUser}`;
-            
-            if (user.isAdmin) {
-                adminButton.style.display = 'inline-block';
-            } else {
-                adminButton.style.display = 'none';
-            }
-
-            // Cargar el progreso del usuario
-            const userProgress = user.progress || {};
-            updateProgress(userProgress);
+        // Verificar si es admin y configurar botón
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        const user = users.find(u => u.username === currentUser);
+        const adminButton = document.getElementById('adminButton');
+        if (user && user.isAdmin && adminButton) {
+            adminButton.style.display = 'flex';
+            adminButton.onclick = () => window.location.href = 'admin.html';
         }
     }
 });
 
-// Función para actualizar el progreso visual
-function updateProgress(progress) {
-    // Actualizar los checkboxes según el progreso
-    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-    checkboxes.forEach(checkbox => {
-        const id = checkbox.id;
-        checkbox.checked = progress[id] || false;
-    });
-
-    // Recalcular y actualizar el progreso total
-    const total = checkboxes.length;
-    const completed = Object.values(progress).filter(Boolean).length;
-    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-
-    const progressBar = document.getElementById('totalProgress');
-    const progressText = document.getElementById('progressPercentage');
-    
-    if (progressBar) {
-        progressBar.style.width = `${percentage}%`;
-    }
-    if (progressText) {
-        progressText.textContent = `${percentage}%`;
-    }
-}
-
-// Exponer funciones para uso externo
-window.saveUserProgress = saveUserProgress;
-window.getCurrentUserProgress = getCurrentUserProgress; 
+// Exportar funciones necesarias
+window.handleLogin = handleLogin;
+window.handleLogout = handleLogout; 

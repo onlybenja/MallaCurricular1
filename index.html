@@ -5,34 +5,65 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Malla Curricular</title>
     <link rel="shortcut icon" href="./descarga.png" type="image/png">
+    <!-- Fuentes de Google -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&family=Open+Sans:wght@400;600&family=Lato:wght@400;700&family=Montserrat:wght@400;500&family=Poppins:wght@400;500&family=Raleway:wght@400;500&family=Ubuntu:wght@400;500&family=Playfair+Display:wght@400;500&family=Merriweather:wght@400;700&family=Source+Sans+Pro:wght@400;600&family=Nunito:wght@400;600&family=Quicksand:wght@400;500&family=Josefin+Sans:wght@400;500&family=Work+Sans:wght@400;500&family=Mulish:wght@400;500&family=Inter:wght@400;500&family=Rubik:wght@400;500&family=DM+Sans:wght@400;500&family=Manrope:wght@400;500&family=Space+Grotesk:wght@400;500" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Modal de Login (visible por defecto) -->
-    <div id="loginModal" class="modal" style="display: block;">
-        <div class="modal-content">
-            <div class="modal-body">
-                <h2>Iniciar Sesión</h2>
-                <form id="loginForm">
-                    <input type="text" id="loginUsername" placeholder="Nombre de usuario" required>
-                    <input type="password" id="loginPassword" placeholder="Contraseña" required>
-                    <button type="submit">Entrar</button>
-                </form>
+    <!-- Modal de Login -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content login-modal">
+            <div class="login-header">
+                <h2>Bienvenido/a</h2>
+                <p class="login-subtitle">Ingresa a tu cuenta para ver tu progreso</p>
             </div>
+            <form id="loginForm" class="login-form">
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="loginUsername" placeholder="Nombre de usuario" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="loginPassword" placeholder="Contraseña" required>
+                </div>
+                <button type="submit" class="login-button">
+                    <span>Iniciar Sesión</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
         </div>
     </div>
 
-    <!-- Contenido principal (oculto hasta login) -->
+    <!-- Contenido principal -->
     <div id="mainContent" style="display: none;">
         <div class="container">
             <header>
                 <div class="header-content">
-                    <h1>Malla de Nani - Medicina Veterinaria</h1>
+                    <h1>Malla Curricular - <span id="accountName"></span></h1>
                     <div class="user-controls">
-                        <span id="userDisplay"></span>
-                        <button id="logoutButton" class="logout-button">Cerrar Sesión</button>
-                        <button id="adminButton" class="admin-button" style="display: none;">⚙️</button>
+                        <div class="profile-menu">
+                            <button id="profileButton" class="profile-button">
+                                <i class="fas fa-user-circle"></i>
+                                <span id="userDisplay"></span>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div class="profile-dropdown">
+                                <button id="customizeButton" class="menu-item">
+                                    <i class="fas fa-palette"></i>
+                                    <span>Personalizar</span>
+                                </button>
+                                <button id="adminButton" class="menu-item">
+                                    <i class="fas fa-cog"></i>
+                                    <span>Panel de Admin</span>
+                                </button>
+                                <button id="logoutButton" class="menu-item">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    <span>Cerrar Sesión</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="controls">
@@ -49,13 +80,60 @@
                 <!-- Los semestres se generarán dinámicamente aquí -->
             </main>
             <footer>
-                <p>© 2024 Malla de Nani - Medicina Veterinaria. Todos los derechos reservados.</p>
+                <p>© 2024 Malla Curricular. Todos los derechos reservados.</p>
             </footer>
         </div>
     </div>
 
+    <div id="colorModal" class="modal color-modal" style="display:none;">
+        <div class="modal-content color-modal-content">
+            <button class="close-button" id="closeColorModal">&times;</button>
+            <h2>Personalizar</h2>
+            <div id="customizeTabs" class="customize-tabs">
+                <button id="colorsTabBtn" class="customize-tab active">Colores</button>
+                <button id="fontTabBtn" class="customize-tab">Tipografía</button>
+            </div>
+            
+            <!-- Sección de Colores -->
+            <div id="colorsSection" class="customize-section">
+                <div id="colorModeTabs" class="color-tabs">
+                    <button id="easyModeBtn" class="color-tab active">Fácil</button>
+                    <button id="advancedModeBtn" class="color-tab">Avanzado</button>
+                </div>
+                <div id="easyMode" class="color-mode-section">
+                    <p>Elige un color de acento (fuerte):</p>
+                    <div class="color-palette" id="colorPalette"></div>
+                </div>
+                <div id="advancedMode" class="color-mode-section" style="display:none;">
+                    <div class="color-option">
+                        <label>Color de acento (fuerte):</label>
+                        <input type="color" id="secondaryColorAdv" value="#FF69B4">
+                    </div>
+                    <div class="color-option">
+                        <label>Color de fondo (claro):</label>
+                        <input type="color" id="primaryColorAdv" value="#FFB6DF">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nueva Sección de Tipografías -->
+            <div id="fontSection" class="customize-section" style="display:none;">
+                <p>Elige una tipografía:</p>
+                <div class="font-grid" id="fontGrid">
+                    <!-- Las fuentes se agregarán dinámicamente desde JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast para mensajes -->
+    <div id="toast" class="toast"></div>
+
     <script src="data.js"></script>
+    <script src="data_derecho.js"></script>
+    <script src="data_medicina.js"></script>
     <script src="auth.js"></script>
     <script src="script.js"></script>
+    <script src="customize.js"></script>
 </body>
 </html> 

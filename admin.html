@@ -24,8 +24,23 @@
             <section class="create-account-section">
                 <h2>Crear Nueva Cuenta</h2>
                 <form id="createAccountForm">
-                    <input type="text" id="newUserName" placeholder="Nombre de usuario" required>
+                    <input type="text" id="fullName" placeholder="Nombre completo" required>
+                    <input type="text" id="newUserName" placeholder="Nombre de usuario (para iniciar sesión)" required>
                     <input type="password" id="newUserPassword" placeholder="Contraseña" required>
+                    <select id="universitySelect" required>
+                        <option value="">Selecciona una Universidad</option>
+                        <option value="ubo">Universidad Bernardo O'Higgins</option>
+                    </select>
+                    <select id="careerSelect" required>
+                        <option value="">Selecciona una carrera</option>
+                        <option value="veterinaria">Medicina Veterinaria</option>
+                        <option value="derecho">Derecho</option>
+                        <option value="medicina">Medicina</option>
+                    </select>
+                    <div class="admin-checkbox">
+                        <input type="checkbox" id="isAdmin">
+                        <label for="isAdmin">Crear como Administrador</label>
+                    </div>
                     <button type="submit">Crear Cuenta</button>
                 </form>
             </section>
@@ -40,6 +55,24 @@
     </div>
 
     <script>
+        // Función para obtener el nombre completo de la universidad
+        function getUniversityName(universityValue) {
+            const universities = {
+                'ubo': 'Universidad Bernardo O\'Higgins'
+            };
+            return universities[universityValue] || universityValue;
+        }
+
+        // Función para obtener el nombre completo de la carrera
+        function getCareerName(careerValue) {
+            const careers = {
+                'veterinaria': 'Medicina Veterinaria',
+                'derecho': 'Derecho',
+                'medicina': 'Medicina'
+            };
+            return careers[careerValue] || careerValue;
+        }
+
         // Verificar autenticación
         const currentUser = localStorage.getItem('currentUser');
         if (!currentUser) {
@@ -70,50 +103,86 @@
                 const userCard = document.createElement('div');
                 userCard.className = 'account-card';
                 userCard.innerHTML = `
-                    <h3>${user.username}</h3>
+                    <h3>${user.fullName || user.username}</h3>
+                    <div class="username-info">Usuario: ${user.username}</div>
                     <span class="role ${user.isAdmin ? 'admin' : 'user'}">${user.isAdmin ? 'Administrador' : 'Usuario'}</span>
+                    <div class="university-info">Universidad: ${getUniversityName(user.university)}</div>
+                    <div class="career-info">Carrera: ${getCareerName(user.career)}</div>
+                    <div class="progress-info">Materias completadas: ${Object.values(user.progress || {}).filter(Boolean).length}</div>
                     ${user.username !== currentUser ? 
-                        `<button onclick="deleteUser('${user.username}')" class="delete-account">Eliminar</button>` : 
+                        `<button class="delete-account" data-username="${user.username}">Eliminar</button>` : 
                         '<span class="current-user">(Usuario actual)</span>'}
                 `;
                 accountsList.appendChild(userCard);
+
+                // Añadir evento para eliminar cuenta
+                const deleteButton = userCard.querySelector('.delete-account');
+                if (deleteButton) {
+                    deleteButton.addEventListener('click', () => {
+                        if (confirm('¿Estás seguro de que quieres eliminar esta cuenta?')) {
+                            const username = deleteButton.dataset.username;
+                            const users = JSON.parse(localStorage.getItem('users') || '[]');
+                            const updatedUsers = users.filter(u => u.username !== username);
+                            localStorage.setItem('users', JSON.stringify(updatedUsers));
+                            loadUsers();
+                            alert('Cuenta eliminada exitosamente');
+                        }
+                    });
+                }
             });
         }
 
-        // Función para eliminar usuario
-        function deleteUser(username) {
-            if (confirm('¿Estás seguro de que quieres eliminar este usuario?')) {
-                let users = JSON.parse(localStorage.getItem('users') || '[]');
-                users = users.filter(u => u.username !== username);
-                localStorage.setItem('users', JSON.stringify(users));
-                loadUsers();
-            }
-        }
-
-        // Manejar creación de cuenta
-        document.getElementById('createAccountForm').addEventListener('submit', function(e) {
+        // Manejar el formulario de creación de cuenta
+        document.getElementById('createAccountForm').addEventListener('submit', (e) => {
             e.preventDefault();
+            
+            const fullName = document.getElementById('fullName').value.trim();
             const username = document.getElementById('newUserName').value.trim();
             const password = document.getElementById('newUserPassword').value;
+            const isAdmin = document.getElementById('isAdmin').checked;
+            const university = document.getElementById('universitySelect').value;
+            const career = document.getElementById('careerSelect').value;
 
-            let users = JSON.parse(localStorage.getItem('users') || '[]');
-            
-            if (users.some(u => u.username === username)) {
+            if (!fullName) {
+                alert('Por favor ingresa el nombre completo');
+                return;
+            }
+
+            if (!university) {
+                alert('Por favor selecciona una universidad');
+                return;
+            }
+
+            if (!career) {
+                alert('Por favor selecciona una carrera');
+                return;
+            }
+
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            if (users.some(user => user.username === username)) {
                 alert('Este nombre de usuario ya existe');
                 return;
             }
 
             users.push({
                 username: username,
+                fullName: fullName,
                 password: password,
-                isAdmin: false,
-                progress: {}
+                isAdmin: isAdmin,
+                university: university,
+                career: career,
+                progress: {},
+                colors: {
+                    primary: '#FFB6DF',
+                    secondary: '#FF69B4'
+                },
+                font: 'Poppins'
             });
 
             localStorage.setItem('users', JSON.stringify(users));
-            this.reset();
+            document.getElementById('createAccountForm').reset();
             loadUsers();
-            alert('Usuario creado exitosamente');
+            alert('Cuenta creada exitosamente');
         });
 
         // Cargar usuarios al iniciar

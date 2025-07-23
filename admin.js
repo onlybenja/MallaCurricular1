@@ -48,97 +48,208 @@ function logout() {
     window.location.href = 'index.html';
 }
 
-// Verificar autenticación cuando se carga la página
+// Verificar autenticación al cargar la página
 document.addEventListener('DOMContentLoaded', () => {
-    const currentUser = checkCurrentSession();
+    const currentUser = localStorage.getItem('currentUser');
     if (!currentUser) {
         window.location.href = 'index.html';
         return;
     }
 
-    // Verificar si es administrador
-    const users = getUsers();
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
     const user = users.find(u => u.username === currentUser);
     if (!user || !user.isAdmin) {
         window.location.href = 'index.html';
         return;
     }
 
-    // Mostrar el nombre del administrador
-    const adminNameElement = document.createElement('div');
-    adminNameElement.className = 'admin-name';
-    adminNameElement.textContent = `Administrador: ${currentUser}`;
-    document.querySelector('.admin-header').appendChild(adminNameElement);
-
-    // Añadir botón de cerrar sesión
-    const logoutButton = document.createElement('button');
-    logoutButton.className = 'logout-button';
-    logoutButton.textContent = 'Cerrar Sesión';
-    logoutButton.onclick = logout;
-    document.querySelector('.admin-header').appendChild(logoutButton);
-
-    // Cargar la lista de usuarios
-    loadAccounts();
+    // Inicializar la tabla de usuarios
+    loadUsers();
+    setupEventListeners();
 });
 
-// Función para cargar las cuentas existentes
-async function loadAccounts() {
-    const accountsList = document.getElementById('accountsList');
-    accountsList.innerHTML = '';
+// Variables globales
+let selectedUserId = null;
 
-    const users = getUsers();
-    users.forEach(userData => {
-        const accountCard = document.createElement('div');
-        accountCard.className = 'account-card';
-        accountCard.innerHTML = `
-            <h3>${userData.username}</h3>
-            <span class="role ${userData.isAdmin ? 'admin' : 'user'}">${userData.isAdmin ? 'Administrador' : 'Usuario'}</span>
-            <div class="progress-info">Materias completadas: ${Object.values(userData.progress || {}).filter(Boolean).length}</div>
-            ${userData.username !== localStorage.getItem('currentUser') ? 
-                `<button class="delete-account" data-username="${userData.username}">Eliminar</button>` : 
-                '<span class="current-user">(Usuario actual)</span>'}
+// Función para cargar usuarios
+function loadUsers() {
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const tableBody = document.getElementById('usersTableBody');
+    const currentUser = localStorage.getItem('currentUser');
+    
+    tableBody.innerHTML = '';
+    
+    users.forEach(user => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${user.username}</td>
+            <td><span class="role ${user.isAdmin ? 'admin' : 'user'}">${user.isAdmin ? 'Administrador' : 'Usuario'}</span></td>
+            <td>${calculateProgress(user.progress)}%</td>
+            <td>
+                <div class="action-buttons">
+                    <button class="edit-button" onclick="editUser('${user.username}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    ${user.username !== currentUser ? `
+                        <button class="delete-button" onclick="showDeleteConfirmation('${user.username}')">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    ` : ''}
+                </div>
+            </td>
         `;
-        accountsList.appendChild(accountCard);
-
-        // Añadir evento para eliminar cuenta
-        const deleteButton = accountCard.querySelector('.delete-account');
-        if (deleteButton) {
-            deleteButton.addEventListener('click', () => {
-                if (confirm('¿Estás seguro de que quieres eliminar esta cuenta?')) {
-                    const username = deleteButton.dataset.username;
-                    const users = getUsers();
-                    const updatedUsers = users.filter(u => u.username !== username);
-                    saveUsers(updatedUsers);
-                    loadAccounts();
-                    alert('Cuenta eliminada exitosamente');
-                }
-            });
-        }
+        tableBody.appendChild(row);
     });
 }
 
-// Manejar el formulario de creación de cuenta
-document.getElementById('createAccountForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-    
-    const username = document.getElementById('newUserName').value.trim();
-    const password = document.getElementById('newUserPassword').value;
+// Calcular progreso del usuario
+function calculateProgress(progress) {
+    if (!progress) return 0;
+    const completed = Object.values(progress).filter(value => value).length;
+    const total = Object.keys(progress).length;
+    return total > 0 ? Math.round((completed / total) * 100) : 0;
+}
 
-    const users = getUsers();
-    if (users.some(user => user.username === username)) {
-        alert('Este nombre de usuario ya existe');
-        return;
-    }
-
-    users.push({
-        username: username,
-        password: password,
-        isAdmin: false,
-        progress: {}
+// Configurar event listeners
+function setupEventListeners() {
+    // Botón de volver
+    document.getElementById('backButton').addEventListener('click', () => {
+        window.location.href = 'index.html';
     });
 
-    saveUsers(users);
-    document.getElementById('createAccountForm').reset();
-    loadAccounts();
-    alert('Cuenta creada exitosamente');
-}); 
+    // Botón de añadir usuario
+    document.getElementById('addUserBtn').addEventListener('click', () => {
+        showUserModal();
+    });
+
+    // Formulario de usuario
+    document.getElementById('userForm').addEventListener('submit', handleUserFormSubmit);
+
+    // Botones de cancelar
+    document.getElementById('cancelBtn').addEventListener('click', hideUserModal);
+    document.getElementById('cancelDeleteBtn').addEventListener('click', hideDeleteConfirmation);
+
+    // Botón de confirmar eliminación
+    document.getElementById('confirmDeleteBtn').addEventListener('click', deleteSelectedUser);
+
+    // Búsqueda de usuarios
+    document.getElementById('userSearch').addEventListener('input', handleSearch);
+}
+
+// Mostrar modal de usuario
+function showUserModal(username = '') {
+    const modal = document.getElementById('userModal');
+    const form = document.getElementById('userForm');
+    const modalTitle = document.getElementById('modalTitle');
+    const passwordInput = document.getElementById('password');
+
+    selectedUserId = username;
+    modalTitle.textContent = username ? 'Editar Usuario' : 'Añadir Usuario';
+    
+    if (username) {
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        const user = users.find(u => u.username === username);
+        if (user) {
+            document.getElementById('username').value = user.username;
+            document.getElementById('isAdmin').checked = user.isAdmin;
+            passwordInput.required = false;
+            passwordInput.placeholder = 'Dejar en blanco para mantener la contraseña actual';
+        }
+    } else {
+        form.reset();
+        passwordInput.required = true;
+        passwordInput.placeholder = 'Contraseña';
+    }
+
+    modal.style.display = 'flex';
+}
+
+// Ocultar modal de usuario
+function hideUserModal() {
+    document.getElementById('userModal').style.display = 'none';
+    document.getElementById('userForm').reset();
+    selectedUserId = null;
+}
+
+// Manejar envío del formulario de usuario
+function handleUserFormSubmit(e) {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const isAdmin = document.getElementById('isAdmin').checked;
+    
+    let users = JSON.parse(localStorage.getItem('users') || '[]');
+    
+    if (selectedUserId) {
+        // Editar usuario existente
+        const userIndex = users.findIndex(u => u.username === selectedUserId);
+        if (userIndex !== -1) {
+            const updatedUser = {
+                ...users[userIndex],
+                username,
+                isAdmin
+            };
+            if (password) {
+                updatedUser.password = password;
+            }
+            users[userIndex] = updatedUser;
+        }
+    } else {
+        // Crear nuevo usuario
+        if (users.some(u => u.username === username)) {
+            alert('Este nombre de usuario ya existe');
+            return;
+        }
+        users.push({
+            username,
+            password,
+            isAdmin,
+            progress: {}
+        });
+    }
+    
+    localStorage.setItem('users', JSON.stringify(users));
+    hideUserModal();
+    loadUsers();
+}
+
+// Mostrar confirmación de eliminación
+function showDeleteConfirmation(username) {
+    selectedUserId = username;
+    document.getElementById('confirmModal').style.display = 'flex';
+}
+
+// Ocultar confirmación de eliminación
+function hideDeleteConfirmation() {
+    document.getElementById('confirmModal').style.display = 'none';
+    selectedUserId = null;
+}
+
+// Eliminar usuario seleccionado
+function deleteSelectedUser() {
+    if (!selectedUserId) return;
+    
+    let users = JSON.parse(localStorage.getItem('users') || '[]');
+    users = users.filter(user => user.username !== selectedUserId);
+    localStorage.setItem('users', JSON.stringify(users));
+    
+    hideDeleteConfirmation();
+    loadUsers();
+}
+
+// Editar usuario
+function editUser(username) {
+    showUserModal(username);
+}
+
+// Manejar búsqueda de usuarios
+function handleSearch(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('#usersTableBody tr');
+    
+    rows.forEach(row => {
+        const username = row.querySelector('td').textContent.toLowerCase();
+        row.style.display = username.includes(searchTerm) ? '' : 'none';
+    });
+} 
