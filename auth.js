@@ -71,6 +71,7 @@ function handleLogin(username, password) {
 
         if (typeof updateMallaDisplay === 'function') {
             updateMallaDisplay();
+        loadSavedProgress();
     }
 
     return true;
@@ -138,92 +139,6 @@ function initializeDefaultAdmin() {
     }
 }
 
-// --- NUEVO SISTEMA FIRESTORE USUARIO/CONTRASEÑA ---
-
-// REGISTRO DE USUARIO
-async function registerUser(username, password, fullName, career, university) {
-    try {
-        // Verificar si el usuario ya existe
-        const userSnap = await db.collection('users').where('username', '==', username).get();
-        if (!userSnap.empty) {
-            alert('El nombre de usuario ya existe');
-            return null;
-        }
-        // Crear usuario en Firestore
-        const userDoc = await db.collection('users').add({
-            username,
-            password, // Texto plano por simplicidad
-            fullName,
-            career,
-            university,
-            progress: {},
-            isAdmin: false
-        });
-        return userDoc.id;
-    } catch (error) {
-        alert('Error al registrar usuario: ' + error.message);
-        return null;
-    }
-}
-
-// LOGIN DE USUARIO
-async function loginUser(username, password) {
-    try {
-        const userSnap = await db.collection('users').where('username', '==', username).get();
-        if (userSnap.empty) {
-            alert('Usuario no encontrado');
-            return null;
-        }
-        const userDoc = userSnap.docs[0];
-        const userData = userDoc.data();
-        if (userData.password !== password) {
-            alert('Contraseña incorrecta');
-            return null;
-        }
-        // Guardar sesión en sessionStorage
-        sessionStorage.setItem('currentUserId', userDoc.id);
-        return { id: userDoc.id, ...userData };
-    } catch (error) {
-        alert('Error al iniciar sesión: ' + error.message);
-        return null;
-    }
-}
-
-// CERRAR SESIÓN
-function logoutUser() {
-    sessionStorage.removeItem('currentUserId');
-    window.location.reload();
-}
-
-// OBTENER USUARIO ACTUAL
-async function getCurrentUser() {
-    const userId = sessionStorage.getItem('currentUserId');
-    if (!userId) return null;
-    const userDoc = await db.collection('users').doc(userId).get();
-    if (!userDoc.exists) return null;
-    return { id: userDoc.id, ...userDoc.data() };
-}
-
-// GUARDAR PROGRESO EN FIRESTORE
-async function saveProgressToCloud(progress) {
-    const userId = sessionStorage.getItem('currentUserId');
-    if (userId) {
-        await db.collection('users').doc(userId).update({ progress });
-    }
-}
-
-// CARGAR PROGRESO DESDE FIRESTORE
-async function loadProgressFromCloud() {
-    const userId = sessionStorage.getItem('currentUserId');
-    if (userId) {
-        const doc = await db.collection('users').doc(userId).get();
-        return doc.exists ? doc.data().progress : {};
-    }
-    return {};
-}
-
-// --- ADAPTAR FORMULARIOS Y FLUJO ---
-
 // Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
     initializeDefaultAdmin();
@@ -232,43 +147,45 @@ document.addEventListener('DOMContentLoaded', () => {
     // Login form
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
-        loginForm.addEventListener('submit', async (e) => {
+        loginForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            const username = document.getElementById('loginUsername').value.trim();
+            const username = document.getElementById('loginUsername').value;
             const password = document.getElementById('loginPassword').value;
-            const user = await loginUser(username, password);
-            if (user) {
-                window.location.reload();
+            
+            if (handleLogin(username, password)) {
+                loginForm.reset();
+            } else {
+                alert('Usuario o contraseña incorrectos');
             }
         });
     }
 
-    // Registro (solo admin.html)
-    const registerForm = document.getElementById('createAccountForm');
-    if (registerForm) {
-        registerForm.addEventListener('submit', async (e) => {
+    // Profile menu
+    const profileButton = document.getElementById('profileButton');
+    const profileMenu = document.querySelector('.profile-menu');
+    
+    if (profileButton && profileMenu) {
+        profileButton.addEventListener('click', (e) => {
             e.preventDefault();
-            const fullName = document.getElementById('fullName').value.trim();
-            const username = document.getElementById('newUserName').value.trim();
-            const password = document.getElementById('newUserPassword').value;
-            const university = document.getElementById('universitySelect').value;
-            const career = document.getElementById('careerSelect').value;
-            await registerUser(username, password, fullName, career, university);
-            alert('Cuenta creada exitosamente');
-            registerForm.reset();
-            window.location.reload();
+            e.stopPropagation();
+            profileMenu.classList.toggle('active');
         });
+
+    // Cerrar menú al hacer click fuera
+    document.addEventListener('click', (e) => {
+            if (!profileMenu.contains(e.target)) {
+            profileMenu.classList.remove('active');
+        }
+    });
     }
 
     // Botón de logout
     const logoutButton = document.getElementById('logoutButton');
     if (logoutButton) {
-        logoutButton.addEventListener('click', logoutUser);
+        logoutButton.addEventListener('click', handleLogout);
     }
 });
 
-// Exportar funciones necesarias para otros scripts
-window.getCurrentUser = getCurrentUser;
-window.saveProgressToCloud = saveProgressToCloud;
-window.loadProgressFromCloud = loadProgressFromCloud;
-window.logoutUser = logoutUser; 
+// Exportar funciones necesarias
+window.handleLogin = handleLogin;
+window.handleLogout = handleLogout; 
