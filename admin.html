@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - Malla Curricular</title>
+    <link rel="shortcut icon" href="./descarga.png" type="image/png">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="admin.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="admin-container">
+        <header class="admin-header">
+            <h1>Panel de Administración</h1>
+            <div class="admin-controls">
+                <span id="adminName"></span>
+                <button onclick="window.location.href='index.html'" class="back-button">Volver</button>
+                <button onclick="logout()" class="logout-button">Cerrar Sesión</button>
+            </div>
+        </header>
+
+        <main class="admin-main">
+            <section class="create-account-section">
+                <h2>Crear Nueva Cuenta</h2>
+                <form id="createAccountForm">
+                    <input type="text" id="newUserName" placeholder="Nombre de usuario" required>
+                    <input type="password" id="newUserPassword" placeholder="Contraseña" required>
+                    <button type="submit">Crear Cuenta</button>
+                </form>
+            </section>
+
+            <section class="accounts-list-section">
+                <h2>Cuentas Existentes</h2>
+                <div id="accountsList" class="accounts-grid">
+                    <!-- Las cuentas se cargarán dinámicamente aquí -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Verificar autenticación
+        const currentUser = localStorage.getItem('currentUser');
+        if (!currentUser) {
+            window.location.href = 'index.html';
+        } else {
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const user = users.find(u => u.username === currentUser);
+            if (!user || !user.isAdmin) {
+                window.location.href = 'index.html';
+            } else {
+                document.getElementById('adminName').textContent = `Administrador: ${currentUser}`;
+            }
+        }
+
+        // Función para cerrar sesión
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.href = 'index.html';
+        }
+
+        // Función para cargar usuarios
+        function loadUsers() {
+            const accountsList = document.getElementById('accountsList');
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            accountsList.innerHTML = '';
+
+            users.forEach(user => {
+                const userCard = document.createElement('div');
+                userCard.className = 'account-card';
+                userCard.innerHTML = `
+                    <h3>${user.username}</h3>
+                    <span class="role ${user.isAdmin ? 'admin' : 'user'}">${user.isAdmin ? 'Administrador' : 'Usuario'}</span>
+                    ${user.username !== currentUser ? 
+                        `<button onclick="deleteUser('${user.username}')" class="delete-account">Eliminar</button>` : 
+                        '<span class="current-user">(Usuario actual)</span>'}
+                `;
+                accountsList.appendChild(userCard);
+            });
+        }
+
+        // Función para eliminar usuario
+        function deleteUser(username) {
+            if (confirm('¿Estás seguro de que quieres eliminar este usuario?')) {
+                let users = JSON.parse(localStorage.getItem('users') || '[]');
+                users = users.filter(u => u.username !== username);
+                localStorage.setItem('users', JSON.stringify(users));
+                loadUsers();
+            }
+        }
+
+        // Manejar creación de cuenta
+        document.getElementById('createAccountForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('newUserName').value.trim();
+            const password = document.getElementById('newUserPassword').value;
+
+            let users = JSON.parse(localStorage.getItem('users') || '[]');
+            
+            if (users.some(u => u.username === username)) {
+                alert('Este nombre de usuario ya existe');
+                return;
+            }
+
+            users.push({
+                username: username,
+                password: password,
+                isAdmin: false,
+                progress: {}
+            });
+
+            localStorage.setItem('users', JSON.stringify(users));
+            this.reset();
+            loadUsers();
+            alert('Usuario creado exitosamente');
+        });
+
+        // Cargar usuarios al iniciar
+        loadUsers();
+    </script>
+</body>
+</html> 

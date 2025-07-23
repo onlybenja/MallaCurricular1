@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Malla Curricular</title>
+    <link rel="shortcut icon" href="./descarga.png" type="image/png">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Modal de Login (visible por defecto) -->
+    <div id="loginModal" class="modal" style="display: block;">
+        <div class="modal-content">
+            <div class="modal-body">
+                <h2>Iniciar Sesión</h2>
+                <form id="loginForm">
+                    <input type="text" id="loginUsername" placeholder="Nombre de usuario" required>
+                    <input type="password" id="loginPassword" placeholder="Contraseña" required>
+                    <button type="submit">Entrar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido principal (oculto hasta login) -->
+    <div id="mainContent" style="display: none;">
+        <div class="container">
+            <header>
+                <div class="header-content">
+                    <h1>Malla de Nani - Medicina Veterinaria</h1>
+                    <div class="user-controls">
+                        <span id="userDisplay"></span>
+                        <button id="logoutButton" class="logout-button">Cerrar Sesión</button>
+                        <button id="adminButton" class="admin-button" style="display: none;">⚙️</button>
+                    </div>
+                </div>
+                <div class="controls">
+                    <div class="progress-container">
+                        <label>Progreso Total:</label>
+                        <div class="progress-bar">
+                            <div class="progress" id="totalProgress"></div>
+                        </div>
+                        <span id="progressPercentage">0%</span>
+                    </div>
+                </div>
+            </header>
+            <main id="mallaContainer">
+                <!-- Los semestres se generarán dinámicamente aquí -->
+            </main>
+            <footer>
+                <p>© 2024 Malla de Nani - Medicina Veterinaria. Todos los derechos reservados.</p>
+            </footer>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="auth.js"></script>
+    <script src="script.js"></script>
+</body>
+</html> 
