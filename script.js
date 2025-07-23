@@ -167,15 +167,33 @@ function toggleCourse(courseDiv, course) {
         return;
     }
 
-    const isCompletingCourse = !courseDiv.classList.contains('completed');
+    const wasCompleted = courseDiv.classList.contains('completed');
     courseDiv.classList.toggle('completed');
+    
+    // Agregar clase temporal para la animación
+    if (!wasCompleted) {
+        courseDiv.classList.add('just-completed');
+        setTimeout(() => courseDiv.classList.remove('just-completed'), 600);
+    } else {
+        courseDiv.classList.add('just-uncompleted');
+        setTimeout(() => courseDiv.classList.remove('just-uncompleted'), 300);
+    }
+
     const statusDiv = courseDiv.querySelector('.course-status');
     if (statusDiv) {
-        statusDiv.textContent = courseDiv.classList.contains('completed') ? '✓' : '';
+        if (!wasCompleted) {
+            statusDiv.textContent = '✓';
+            // Reiniciar la animación del checkmark
+            statusDiv.style.animation = 'none';
+            statusDiv.offsetHeight; // Forzar reflow
+            statusDiv.style.animation = null;
+        } else {
+            statusDiv.textContent = '';
+        }
     }
 
     // Si estamos desmarcando un curso, necesitamos desmarcar también los cursos que dependen de él
-    if (!isCompletingCourse) {
+    if (wasCompleted) {
         deactivateDependentCourses(course.id);
     }
 
@@ -215,11 +233,22 @@ function updateDependentCourses(courseId) {
                         return prereqElement && prereqElement.classList.contains('completed');
                     });
                     
+                    const wasEnabled = !courseDiv.classList.contains('disabled');
                     courseDiv.classList.toggle('disabled', !hasPrerequisites);
+                    
+                    // Si el curso cambia de estado, agregar animación
+                    if (wasEnabled !== hasPrerequisites) {
+                        courseDiv.style.animation = 'none';
+                        courseDiv.offsetHeight; // Forzar reflow
+                        courseDiv.style.animation = null;
+                    }
                     
                     // Si el curso está marcado como completado pero ya no tiene los prerrequisitos, desmarcarlo
                     if (!hasPrerequisites && courseDiv.classList.contains('completed')) {
                         courseDiv.classList.remove('completed');
+                        courseDiv.classList.add('just-uncompleted');
+                        setTimeout(() => courseDiv.classList.remove('just-uncompleted'), 300);
+                        
                         const statusDiv = courseDiv.querySelector('.course-status');
                         if (statusDiv) {
                             statusDiv.textContent = '';

@@ -1159,3 +1159,239 @@ footer p {
 .customize-section {
     margin-top: 20px;
 } 
+
+/* Animaciones base */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Aplicar animaciones a elementos */
+.semester {
+    animation: fadeIn 0.5s ease-out;
+    animation-fill-mode: both;
+}
+
+.semester:nth-child(1) { animation-delay: 0.1s; }
+.semester:nth-child(2) { animation-delay: 0.2s; }
+.semester:nth-child(3) { animation-delay: 0.3s; }
+.semester:nth-child(4) { animation-delay: 0.4s; }
+.semester:nth-child(5) { animation-delay: 0.5s; }
+.semester:nth-child(6) { animation-delay: 0.6s; }
+.semester:nth-child(7) { animation-delay: 0.7s; }
+.semester:nth-child(8) { animation-delay: 0.8s; }
+.semester:nth-child(9) { animation-delay: 0.9s; }
+.semester:nth-child(10) { animation-delay: 1s; }
+
+.course {
+    background-color: var(--color-primary);
+    padding: 0.5rem;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    font-size: 0.8rem;
+    border: 2px solid transparent;
+    z-index: 1;
+    animation: scaleIn 0.3s ease-out;
+    animation-fill-mode: both;
+}
+
+.course:not(.disabled):not(.completed):hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.course.completed {
+    background-color: var(--color-primary-dark);
+    transform: scale(1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.course.completed .course-status {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    font-size: 1.2rem;
+    color: white;
+    font-weight: bold;
+    animation: checkmarkAppear 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.course.disabled {
+    background-color: #e0e0e0;
+    cursor: not-allowed;
+    opacity: 1;
+    border: 2px dashed #999;
+    color: #666;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.course.disabled:active {
+    animation: disabledShake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.course:not(.disabled):active {
+    transform: scale(0.95);
+}
+
+.course.just-completed {
+    animation: completedPulse 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.course.just-uncompleted {
+    animation: scaleIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Animación para el tooltip */
+.course-tooltip {
+    position: absolute;
+    background: rgb(44, 62, 80);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    z-index: 1000;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    max-width: 200px;
+    width: max-content;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    font-weight: 500;
+    line-height: 1.4;
+    bottom: 100%;
+    margin-bottom: 8px;
+    text-align: center;
+    white-space: normal;
+    background-clip: padding-box;
+}
+
+.course.disabled:hover .course-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Animación para la barra de progreso */
+.progress {
+    height: 100%;
+    background-color: var(--color-primary-dark);
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Animaciones para el menú de perfil */
+.profile-dropdown {
+    animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.menu-item {
+    animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation-fill-mode: both;
+}
+
+.menu-item:nth-child(1) { animation-delay: 0.1s; }
+.menu-item:nth-child(2) { animation-delay: 0.2s; }
+.menu-item:nth-child(3) { animation-delay: 0.3s; }
+
+/* Animación para el toast */
+.toast {
+    animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Animaciones para el modal de login */
+.login-modal {
+    animation: scaleIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.input-group {
+    animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation-fill-mode: both;
+}
+
+.input-group:nth-child(1) { animation-delay: 0.1s; }
+.input-group:nth-child(2) { animation-delay: 0.2s; }
+
+.login-button {
+    animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation-delay: 0.3s;
+    animation-fill-mode: both;
+}
+
+/* Animación para el botón de personalizar */
+.color-modal-content {
+    animation: scaleIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+} 
+
+/* Animaciones base */
+@keyframes completedPulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 105, 180, 0.4);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(255, 105, 180, 0);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 105, 180, 0);
+    }
+}
+
+@keyframes checkmarkAppear {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes disabledShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+} 
