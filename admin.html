@@ -8,6 +8,18 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="admin.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script>
+        // Verificar autenticación inmediatamente
+        (function() {
+            const currentUser = localStorage.getItem('currentUser');
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const user = users.find(u => u.username === currentUser);
+            
+            if (!user || !user.isAdmin) {
+                window.location.replace('index.html');
+            }
+        })();
+    </script>
 </head>
 <body>
     <div class="admin-container">
@@ -16,7 +28,7 @@
             <div class="admin-controls">
                 <span id="adminName"></span>
                 <button onclick="window.location.href='index.html'" class="back-button">Volver</button>
-                <button onclick="logout()" class="logout-button">Cerrar Sesión</button>
+                <button onclick="window.location.replace('index.html'); localStorage.removeItem('currentUser');" class="logout-button">Cerrar Sesión</button>
             </div>
         </header>
 
@@ -27,10 +39,6 @@
                     <input type="text" id="fullName" placeholder="Nombre completo" required>
                     <input type="text" id="newUserName" placeholder="Nombre de usuario (para iniciar sesión)" required>
                     <input type="password" id="newUserPassword" placeholder="Contraseña" required>
-                    <select id="universitySelect" required>
-                        <option value="">Selecciona una Universidad</option>
-                        <option value="ubo">Universidad Bernardo O'Higgins</option>
-                    </select>
                     <select id="careerSelect" required>
                         <option value="">Selecciona una carrera</option>
                         <option value="veterinaria">Medicina Veterinaria</option>
@@ -47,23 +55,13 @@
 
             <section class="accounts-list-section">
                 <h2>Cuentas Existentes</h2>
-                <div id="accountsList" class="accounts-grid">
-                    <!-- Las cuentas se cargarán dinámicamente aquí -->
-                </div>
+                <div id="accountsList" class="accounts-grid"></div>
             </section>
         </main>
     </div>
 
     <script>
-        // Función para obtener el nombre completo de la universidad
-        function getUniversityName(universityValue) {
-            const universities = {
-                'ubo': 'Universidad Bernardo O\'Higgins'
-            };
-            return universities[universityValue] || universityValue;
-        }
-
-        // Función para obtener el nombre completo de la carrera
+        // Función para obtener el nombre de la carrera
         function getCareerName(careerValue) {
             const careers = {
                 'veterinaria': 'Medicina Veterinaria',
@@ -73,24 +71,10 @@
             return careers[careerValue] || careerValue;
         }
 
-        // Verificar autenticación
+        // Mostrar nombre del administrador
         const currentUser = localStorage.getItem('currentUser');
-        if (!currentUser) {
-            window.location.href = 'index.html';
-        } else {
-            const users = JSON.parse(localStorage.getItem('users') || '[]');
-            const user = users.find(u => u.username === currentUser);
-            if (!user || !user.isAdmin) {
-                window.location.href = 'index.html';
-            } else {
-                document.getElementById('adminName').textContent = `Administrador: ${currentUser}`;
-            }
-        }
-
-        // Función para cerrar sesión
-        function logout() {
-            localStorage.removeItem('currentUser');
-            window.location.href = 'index.html';
+        if (currentUser) {
+            document.getElementById('adminName').textContent = `Administrador: ${currentUser}`;
         }
 
         // Función para cargar usuarios
@@ -106,7 +90,6 @@
                     <h3>${user.fullName || user.username}</h3>
                     <div class="username-info">Usuario: ${user.username}</div>
                     <span class="role ${user.isAdmin ? 'admin' : 'user'}">${user.isAdmin ? 'Administrador' : 'Usuario'}</span>
-                    <div class="university-info">Universidad: ${getUniversityName(user.university)}</div>
                     <div class="career-info">Carrera: ${getCareerName(user.career)}</div>
                     <div class="progress-info">Materias completadas: ${Object.values(user.progress || {}).filter(Boolean).length}</div>
                     ${user.username !== currentUser ? 
@@ -115,17 +98,16 @@
                 `;
                 accountsList.appendChild(userCard);
 
-                // Añadir evento para eliminar cuenta
+                // Evento para eliminar cuenta
                 const deleteButton = userCard.querySelector('.delete-account');
                 if (deleteButton) {
                     deleteButton.addEventListener('click', () => {
                         if (confirm('¿Estás seguro de que quieres eliminar esta cuenta?')) {
-                            const username = deleteButton.dataset.username;
                             const users = JSON.parse(localStorage.getItem('users') || '[]');
-                            const updatedUsers = users.filter(u => u.username !== username);
-                            localStorage.setItem('users', JSON.stringify(updatedUsers));
+                            localStorage.setItem('users', 
+                                JSON.stringify(users.filter(u => u.username !== deleteButton.dataset.username))
+                            );
                             loadUsers();
-                            alert('Cuenta eliminada exitosamente');
                         }
                     });
                 }
@@ -136,29 +118,9 @@
         document.getElementById('createAccountForm').addEventListener('submit', (e) => {
             e.preventDefault();
             
-            const fullName = document.getElementById('fullName').value.trim();
             const username = document.getElementById('newUserName').value.trim();
-            const password = document.getElementById('newUserPassword').value;
-            const isAdmin = document.getElementById('isAdmin').checked;
-            const university = document.getElementById('universitySelect').value;
-            const career = document.getElementById('careerSelect').value;
-
-            if (!fullName) {
-                alert('Por favor ingresa el nombre completo');
-                return;
-            }
-
-            if (!university) {
-                alert('Por favor selecciona una universidad');
-                return;
-            }
-
-            if (!career) {
-                alert('Por favor selecciona una carrera');
-                return;
-            }
-
             const users = JSON.parse(localStorage.getItem('users') || '[]');
+            
             if (users.some(user => user.username === username)) {
                 alert('Este nombre de usuario ya existe');
                 return;
@@ -166,11 +128,10 @@
 
             users.push({
                 username: username,
-                fullName: fullName,
-                password: password,
-                isAdmin: isAdmin,
-                university: university,
-                career: career,
+                fullName: document.getElementById('fullName').value.trim(),
+                password: document.getElementById('newUserPassword').value,
+                isAdmin: document.getElementById('isAdmin').checked,
+                career: document.getElementById('careerSelect').value,
                 progress: {},
                 colors: {
                     primary: '#FFB6DF',
@@ -180,7 +141,7 @@
             });
 
             localStorage.setItem('users', JSON.stringify(users));
-            document.getElementById('createAccountForm').reset();
+            e.target.reset();
             loadUsers();
             alert('Cuenta creada exitosamente');
         });

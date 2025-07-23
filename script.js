@@ -101,10 +101,49 @@ function createMalla() {
             const courseDiv = document.createElement('div');
             courseDiv.className = 'course';
             courseDiv.id = course.id;
-            courseDiv.innerHTML = `
+            
+            // Crear el contenido del curso
+            let courseContent = `
                 <div class="course-name">${course.name}</div>
-                <div class="course-status"></div>
-            `;
+                <div class="course-status"></div>`;
+            
+            // Agregar tooltip si tiene prerrequisitos
+            if (course.prerequisites && course.prerequisites.length > 0) {
+                const prerequisiteNames = course.prerequisites.map(prereqId => {
+                    const semester = currentMallaData.semesters.find(sem => 
+                        sem.courses.some(c => c.id === prereqId)
+                    );
+                    const prereqCourse = semester ? semester.courses.find(c => c.id === prereqId) : null;
+                    return prereqCourse ? prereqCourse.name : prereqId;
+                }).filter(name => name);
+                
+                if (prerequisiteNames.length > 0) {
+                    courseContent += `
+                        <div class="course-tooltip">
+                            Prerrequisitos:<br>${prerequisiteNames.join('<br>')}
+                        </div>`;
+                }
+            }
+            
+            courseDiv.innerHTML = courseContent;
+
+            // Agregar event listeners para el tooltip
+            courseDiv.addEventListener('mouseenter', () => {
+                const tooltip = courseDiv.querySelector('.course-tooltip');
+                if (tooltip) {
+                    const courseRect = courseDiv.getBoundingClientRect();
+                    const headerHeight = document.querySelector('header').getBoundingClientRect().height;
+                    
+                    // Si el curso está cerca de la parte superior de la ventana
+                    if (courseRect.top - headerHeight < 100) {
+                        tooltip.classList.remove('tooltip-top');
+                        tooltip.classList.add('tooltip-bottom');
+                    } else {
+                        tooltip.classList.remove('tooltip-bottom');
+                        tooltip.classList.add('tooltip-top');
+                    }
+                }
+            });
 
             courseDiv.addEventListener('click', () => toggleCourse(courseDiv, course));
             coursesDiv.appendChild(courseDiv);
