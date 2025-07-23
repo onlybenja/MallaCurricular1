@@ -146,7 +146,7 @@ function createMalla() {
                     }
                 }
             }
-            
+
             courseDiv.addEventListener('click', () => toggleCourse(courseDiv, course));
             coursesDiv.appendChild(courseDiv);
         });

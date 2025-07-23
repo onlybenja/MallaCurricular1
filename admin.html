@@ -64,6 +64,26 @@
         </main>
     </div>
 
+    <!-- Firebase App (compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <!-- Firebase Auth (compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <!-- Firebase Firestore (compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyCKrOH4dxZ-gHkUqnotDLOvmNzWr8lyw2c",
+        authDomain: "malla-curricular-4315c.firebaseapp.com",
+        projectId: "malla-curricular-4315c",
+        storageBucket: "malla-curricular-4315c.appspot.com",
+        messagingSenderId: "822634947088",
+        appId: "1:822634947088:web:9160f6dd6b50a0306e6095",
+        measurementId: "G-Q7RF7CN03M"
+      };
+      firebase.initializeApp(firebaseConfig);
+      const auth = firebase.auth();
+      const db = firebase.firestore();
+    </script>
     <script>
         // Función para obtener el nombre completo de la universidad
         function getUniversityName(universityValue) {
@@ -86,7 +106,7 @@
         // Mostrar nombre del administrador
         const currentUser = localStorage.getItem('currentUser');
         if (currentUser) {
-            document.getElementById('adminName').textContent = `Administrador: ${currentUser}`;
+                document.getElementById('adminName').textContent = `Administrador: ${currentUser}`;
         }
 
         // Función para cargar usuarios
