@@ -1,57 +1,74 @@
 // Variable global para la malla actual
 let currentMallaData;
 
-// Función para obtener la malla según la carrera
-function getMallaData() {
-    const currentUser = localStorage.getItem('currentUser');
-    if (!currentUser) return mallaData; // Malla por defecto
-
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const user = users.find(u => u.username === currentUser);
-    
-    if (!user) return mallaData; // Malla por defecto
-
-    switch (user.career) {
-        case 'veterinaria':
-            return mallaData;
-        case 'derecho':
-            return mallaDataDerecho;
-        case 'medicina':
-            return mallaDataMedicina; // Pendiente de crear
-        default:
-            return mallaData;
-    }
-}
-
-// Función para actualizar la malla completa
-function updateMallaDisplay() {
-    const currentUser = localStorage.getItem('currentUser');
-    if (!currentUser) return;
-
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const user = users.find(u => u.username === currentUser);
-    if (!user) return;
-
-    // Actualizar la malla
-    currentMallaData = getMallaData();
-
-    // Limpiar y recrear la malla
-    const mallaContainer = document.getElementById('mallaContainer');
-    if (mallaContainer) {
-        mallaContainer.innerHTML = '';
-        createMalla();
-    }
-
-    // Actualizar el título con la carrera
-    const careerNames = {
+// Función para obtener el nombre de la carrera
+function getCareerName(career) {
+    const careers = {
         'veterinaria': 'Medicina Veterinaria',
         'derecho': 'Derecho',
         'medicina': 'Medicina'
     };
+    return careers[career] || career;
+}
+
+// Función para obtener la malla según la carrera
+function getMallaData() {
+    const currentUser = localStorage.getItem('currentUser');
+    if (!currentUser) return mallaData;
+
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const user = users.find(u => u.username === currentUser);
+    
+    if (!user) return mallaData;
+
+    console.log('Cargando malla para carrera:', user.career);
+
+    // Actualizar el título con el nombre y la carrera
+    const careerName = getCareerName(user.career);
     const titleElement = document.querySelector('h1');
     if (titleElement) {
-        titleElement.textContent = `Malla Curricular - ${careerNames[user.career] || 'Medicina Veterinaria'} - ${user.username}`;
+        titleElement.textContent = `Malla Curricular - ${careerName} - ${user.fullName || user.username}`;
     }
+
+    // Retornar la malla correspondiente según la carrera
+    let selectedMalla;
+    switch (user.career) {
+        case 'veterinaria':
+            selectedMalla = mallaData;
+            break;
+        case 'derecho':
+            selectedMalla = mallaDataDerecho;
+            break;
+        case 'medicina':
+            selectedMalla = mallaDataMedicina;
+            break;
+        default:
+            selectedMalla = mallaData;
+    }
+
+    console.log('Malla seleccionada:', user.career, selectedMalla ? 'encontrada' : 'no encontrada');
+    return selectedMalla;
+}
+
+// Función para actualizar la malla completa
+function updateMallaDisplay() {
+    console.log('Iniciando updateMallaDisplay');
+    currentMallaData = getMallaData();
+    
+    if (!currentMallaData) {
+        console.error('No se encontraron datos de malla');
+        return;
+    }
+
+    const mallaContainer = document.getElementById('mallaContainer');
+    if (!mallaContainer) {
+        console.error('No se encontró el contenedor de la malla');
+        return;
+    }
+
+    console.log('Limpiando y recreando malla');
+    mallaContainer.innerHTML = '';
+    createMalla();
 }
 
 // Función para crear la malla curricular
@@ -61,7 +78,10 @@ function createMalla() {
 
     // Asegurarse de que tenemos datos de malla
     currentMallaData = currentMallaData || getMallaData();
-    if (!currentMallaData) return;
+    if (!currentMallaData) {
+        console.error('No hay datos de malla disponibles');
+        return;
+    }
 
     mallaContainer.innerHTML = '';
 
@@ -260,6 +280,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentUser = localStorage.getItem('currentUser');
     if (currentUser) {
         console.log('Usuario encontrado:', currentUser);
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        const user = users.find(u => u.username === currentUser);
+        if (user) {
+            console.log('Carrera del usuario:', user.career);
+        }
         updateMallaDisplay();
     } else {
         console.log('No hay usuario logueado');

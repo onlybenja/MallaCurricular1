@@ -65,6 +65,13 @@ function handleLogin(username, password) {
         
         // Cargar preferencias del usuario
         loadUserPreferences(username);
+
+        // Actualizar la malla según la carrera del usuario
+        if (typeof updateMallaDisplay === 'function') {
+            console.log('Actualizando malla para carrera:', user.career);
+            updateMallaDisplay();
+        }
+
         loadSavedProgress();
         return true;
     }
@@ -85,6 +92,12 @@ function checkLoggedInUser() {
     
     // Actualizar nombre en la interfaz
     updateUserDisplay(currentUser);
+
+    // Actualizar la malla según la carrera del usuario
+    if (typeof updateMallaDisplay === 'function') {
+        console.log('Actualizando malla en checkLoggedInUser');
+        updateMallaDisplay();
+    }
 
     return true;
 }
