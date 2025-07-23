@@ -92,9 +92,13 @@ function checkLoggedInUser() {
     // Actualizar interfaz
     const loginModal = document.getElementById('loginModal');
     const mainContent = document.getElementById('mainContent');
+    const adminButton = document.getElementById('adminButton');
     
     if (loginModal) loginModal.style.display = currentUser ? 'none' : 'flex';
     if (mainContent) mainContent.style.display = currentUser ? 'block' : 'none';
+    if (adminButton && user) {
+        adminButton.style.display = user.isAdmin ? 'flex' : 'none';
+    }
 
     if (!currentUser) return false;
 

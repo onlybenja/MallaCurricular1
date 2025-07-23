@@ -76,7 +76,6 @@ function createMalla() {
     const mallaContainer = document.getElementById('mallaContainer');
     if (!mallaContainer) return;
 
-    // Asegurarse de que tenemos datos de malla
     currentMallaData = currentMallaData || getMallaData();
     if (!currentMallaData) {
         console.error('No hay datos de malla disponibles');
@@ -103,11 +102,17 @@ function createMalla() {
             courseDiv.id = course.id;
             
             // Crear el contenido del curso
-            let courseContent = `
-                <div class="course-name">${course.name}</div>
-                <div class="course-status"></div>`;
+            const courseNameDiv = document.createElement('div');
+            courseNameDiv.className = 'course-name';
+            courseNameDiv.textContent = course.name;
             
-            // Agregar tooltip si tiene prerrequisitos
+            const courseStatusDiv = document.createElement('div');
+            courseStatusDiv.className = 'course-status';
+            
+            courseDiv.appendChild(courseNameDiv);
+            courseDiv.appendChild(courseStatusDiv);
+            
+            // Agregar tooltip solo si tiene prerrequisitos
             if (course.prerequisites && course.prerequisites.length > 0) {
                 const prerequisiteNames = course.prerequisites.map(prereqId => {
                     const semester = currentMallaData.semesters.find(sem => 
@@ -118,33 +123,30 @@ function createMalla() {
                 }).filter(name => name);
                 
                 if (prerequisiteNames.length > 0) {
-                    courseContent += `
-                        <div class="course-tooltip">
-                            Prerrequisitos:<br>${prerequisiteNames.join('<br>')}
-                        </div>`;
+                    const tooltipDiv = document.createElement('div');
+                    tooltipDiv.className = 'course-tooltip';
+                    const tooltipContent = document.createTextNode('Prerrequisitos:');
+                    tooltipDiv.appendChild(tooltipContent);
+                    
+                    prerequisiteNames.forEach((name, index) => {
+                        tooltipDiv.appendChild(document.createElement('br'));
+                        tooltipDiv.appendChild(document.createTextNode(name));
+                    });
+                    
+                    courseDiv.appendChild(tooltipDiv);
+
+                    // Verificar si los prerrequisitos están completos
+                    const hasPrerequisites = course.prerequisites.every(prereq => {
+                        const prereqElement = document.getElementById(prereq);
+                        return prereqElement && prereqElement.classList.contains('completed');
+                    });
+
+                    if (!hasPrerequisites) {
+                        courseDiv.classList.add('disabled');
+                    }
                 }
             }
             
-            courseDiv.innerHTML = courseContent;
-
-            // Agregar event listeners para el tooltip
-            courseDiv.addEventListener('mouseenter', () => {
-                const tooltip = courseDiv.querySelector('.course-tooltip');
-                if (tooltip) {
-                    const courseRect = courseDiv.getBoundingClientRect();
-                    const headerHeight = document.querySelector('header').getBoundingClientRect().height;
-                    
-                    // Si el curso está cerca de la parte superior de la ventana
-                    if (courseRect.top - headerHeight < 100) {
-                        tooltip.classList.remove('tooltip-top');
-                        tooltip.classList.add('tooltip-bottom');
-                    } else {
-                        tooltip.classList.remove('tooltip-bottom');
-                        tooltip.classList.add('tooltip-top');
-                    }
-                }
-            });
-
             courseDiv.addEventListener('click', () => toggleCourse(courseDiv, course));
             coursesDiv.appendChild(courseDiv);
         });
@@ -162,29 +164,43 @@ function toggleCourse(courseDiv, course) {
     if (!courseDiv || !course) return;
 
     if (courseDiv.classList.contains('disabled')) {
-        // Obtener los nombres de los prerrequisitos faltantes
-        const prerequisitesNames = course.prerequisites.map(prereqId => {
-            const prereqElement = document.getElementById(prereqId);
-            if (prereqElement && !prereqElement.classList.contains('completed')) {
-                return prereqElement.querySelector('.course-name').textContent;
-            }
-            return null;
-        }).filter(name => name !== null);
-
-        if (prerequisitesNames.length > 0) {
-            const message = `No se puede cursar porque aún no has aprobado: ${prerequisitesNames.join(', ')}`;
-            showToast(message);
-        }
         return;
     }
 
+    const isCompletingCourse = !courseDiv.classList.contains('completed');
     courseDiv.classList.toggle('completed');
     const statusDiv = courseDiv.querySelector('.course-status');
     if (statusDiv) {
         statusDiv.textContent = courseDiv.classList.contains('completed') ? '✓' : '';
     }
+
+    // Si estamos desmarcando un curso, necesitamos desmarcar también los cursos que dependen de él
+    if (!isCompletingCourse) {
+        deactivateDependentCourses(course.id);
+    }
+
     updateDependentCourses(course.id);
     saveProgress();
+}
+
+// Función para desactivar cursos que dependen de un prerrequisito
+function deactivateDependentCourses(courseId) {
+    currentMallaData.semesters.forEach(semester => {
+        semester.courses.forEach(course => {
+            if (course.prerequisites.includes(courseId)) {
+                const courseDiv = document.getElementById(course.id);
+                if (courseDiv && courseDiv.classList.contains('completed')) {
+                    courseDiv.classList.remove('completed');
+                    const statusDiv = courseDiv.querySelector('.course-status');
+                    if (statusDiv) {
+                        statusDiv.textContent = '';
+                    }
+                    // Recursivamente desactivar los cursos que dependen de este
+                    deactivateDependentCourses(course.id);
+                }
+            }
+        });
+    });
 }
 
 // Función para actualizar los cursos dependientes
@@ -198,7 +214,19 @@ function updateDependentCourses(courseId) {
                         const prereqElement = document.getElementById(prereq);
                         return prereqElement && prereqElement.classList.contains('completed');
                     });
+                    
                     courseDiv.classList.toggle('disabled', !hasPrerequisites);
+                    
+                    // Si el curso está marcado como completado pero ya no tiene los prerrequisitos, desmarcarlo
+                    if (!hasPrerequisites && courseDiv.classList.contains('completed')) {
+                        courseDiv.classList.remove('completed');
+                        const statusDiv = courseDiv.querySelector('.course-status');
+                        if (statusDiv) {
+                            statusDiv.textContent = '';
+                        }
+                        // Recursivamente actualizar los cursos que dependen de este
+                        updateDependentCourses(course.id);
+                    }
                 }
             }
         });

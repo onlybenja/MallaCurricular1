@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Administración - Malla Curricular</title>
-    <link rel="shortcut icon" href="./descarga.png" type="image/png">
+    <link rel="shortcut icon" href="5833290.png" type="image/png">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="admin.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -39,6 +39,10 @@
                     <input type="text" id="fullName" placeholder="Nombre completo" required>
                     <input type="text" id="newUserName" placeholder="Nombre de usuario (para iniciar sesión)" required>
                     <input type="password" id="newUserPassword" placeholder="Contraseña" required>
+                    <select id="universitySelect" required>
+                        <option value="">Selecciona una Universidad</option>
+                        <option value="ubo">Universidad Bernardo O'Higgins</option>
+                    </select>
                     <select id="careerSelect" required>
                         <option value="">Selecciona una carrera</option>
                         <option value="veterinaria">Medicina Veterinaria</option>
@@ -61,6 +65,14 @@
     </div>
 
     <script>
+        // Función para obtener el nombre completo de la universidad
+        function getUniversityName(universityValue) {
+            const universities = {
+                'ubo': 'Universidad Bernardo O\'Higgins'
+            };
+            return universities[universityValue] || universityValue;
+        }
+
         // Función para obtener el nombre de la carrera
         function getCareerName(careerValue) {
             const careers = {
@@ -131,6 +143,7 @@
                 fullName: document.getElementById('fullName').value.trim(),
                 password: document.getElementById('newUserPassword').value,
                 isAdmin: document.getElementById('isAdmin').checked,
+                university: document.getElementById('universitySelect').value,
                 career: document.getElementById('careerSelect').value,
                 progress: {},
                 colors: {

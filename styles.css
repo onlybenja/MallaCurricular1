@@ -141,6 +141,12 @@ h1 {
     flex-shrink: 0;
     scroll-snap-align: start;
     height: auto;
+    position: relative;
+    z-index: 1;
+}
+
+.semester:hover {
+    z-index: 99;
 }
 
 .semester-title {
@@ -157,6 +163,8 @@ h1 {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    position: relative;
+    z-index: 1;
 }
 
 .course {
@@ -175,22 +183,39 @@ h1 {
 }
 
 .course:hover {
-    z-index: 1001;
+    z-index: 100;
 }
 
 .course.disabled {
-    background-color: var(--color-disabled);
+    background-color: #e0e0e0;
     cursor: not-allowed;
-    opacity: 0.7;
-    border: 3px dashed #666;
+    opacity: 1;
+    border: 2px dashed #999;
+    color: #666;
 }
 
 .course.completed {
     background-color: var(--color-primary-dark);
+    border: none;
 }
 
 .course.completed .course-name {
     text-decoration: line-through;
+    opacity: 0.8;
+}
+
+.course:not(.disabled):not(.completed):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.course.disabled:hover .course-tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+.course:not(.disabled) .course-tooltip {
+    display: none;
 }
 
 .course-name {
@@ -216,7 +241,7 @@ h1 {
     padding: 8px 12px;
     border-radius: 6px;
     font-size: 0.85rem;
-    z-index: 1002;
+    z-index: 1000;
     pointer-events: none;
     opacity: 0;
     visibility: hidden;
@@ -228,16 +253,20 @@ h1 {
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
     font-weight: 500;
     line-height: 1.4;
-}
-
-.course-tooltip.tooltip-top {
     bottom: 100%;
     margin-bottom: 8px;
+    text-align: center;
+    white-space: normal;
+    background-clip: padding-box;
 }
 
-.course-tooltip.tooltip-bottom {
+/* Tooltip para el primer curso de cada semestre */
+.courses-grid .course:first-child .course-tooltip {
+    bottom: auto;
     top: 100%;
     margin-top: 8px;
+    margin-bottom: 0;
+    z-index: 1000;
 }
 
 .course-tooltip::after {
@@ -247,21 +276,16 @@ h1 {
     transform: translateX(-50%);
     border-width: 6px;
     border-style: solid;
-}
-
-.course-tooltip.tooltip-top::after {
-    top: 100%;
     border-color: rgb(44, 62, 80) transparent transparent transparent;
+    bottom: -12px;
+    background: none;
 }
 
-.course-tooltip.tooltip-bottom::after {
-    bottom: 100%;
+/* Flecha para el tooltip cuando está abajo */
+.courses-grid .course:first-child .course-tooltip::after {
+    bottom: auto;
+    top: -12px;
     border-color: transparent transparent rgb(44, 62, 80) transparent;
-}
-
-.course:hover .course-tooltip {
-    opacity: 1;
-    visibility: visible;
 }
 
 /* Ajuste para móviles */
@@ -269,6 +293,7 @@ h1 {
     .course-tooltip {
         font-size: 0.75rem;
         padding: 6px 10px;
+        max-width: 180px;
     }
 }
 
