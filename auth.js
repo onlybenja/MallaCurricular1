@@ -3,18 +3,23 @@ function loadUserPreferences(username) {
     const users = JSON.parse(localStorage.getItem('users') || '[]');
     const user = users.find(u => u.username === username);
     
-    if (user && user.colors) {
+    if (user) {
+        // Cargar colores
+        if (user.colors) {
             document.documentElement.style.setProperty('--color-primary', user.colors.primary);
             document.documentElement.style.setProperty('--color-primary-dark', user.colors.secondary);
             
+            // Convertir el color primario a RGB
             const rgb = hexToRgb(user.colors.primary);
             if (rgb) {
                 document.documentElement.style.setProperty('--color-primary-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
             }
         }
         
-    if (user && user.font) {
+        // Cargar fuente
+        if (user.font) {
             document.documentElement.style.setProperty('--font-family', `'${user.font}', sans-serif`);
+        }
     }
 }
 
@@ -34,11 +39,8 @@ function updateUserDisplay(username) {
     const user = users.find(u => u.username === username);
     const displayName = user && user.fullName ? user.fullName : username;
 
-    const userDisplay = document.getElementById('userDisplay');
-    const accountName = document.getElementById('accountName');
-    
-    if (userDisplay) userDisplay.textContent = displayName;
-    if (accountName) accountName.textContent = displayName;
+    document.getElementById('userDisplay').textContent = displayName;
+    document.getElementById('accountName').textContent = displayName;
 }
 
 // Función para manejar el inicio de sesión
@@ -46,17 +48,8 @@ function handleLogin(username, password) {
     const users = JSON.parse(localStorage.getItem('users') || '[]');
     const user = users.find(u => u.username === username && u.password === password);
     
-    if (!user) return false;
-
+    if (user) {
         localStorage.setItem('currentUser', username);
-    
-    // Si el usuario no es admin y está en la página de admin, redirigir a index
-    if (!user.isAdmin && window.location.pathname.includes('admin.html')) {
-        window.location.replace('index.html');
-        return true;
-    }
-
-    // Actualizar la interfaz
         document.getElementById('loginModal').style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
         
@@ -64,49 +57,45 @@ function handleLogin(username, password) {
         const adminButton = document.getElementById('adminButton');
         if (adminButton) {
             adminButton.style.display = user.isAdmin ? 'flex' : 'none';
+            adminButton.onclick = () => window.location.href = 'admin.html';
         }
 
+        // Actualizar nombre en la interfaz
         updateUserDisplay(username);
+        
+        // Cargar preferencias del usuario
         loadUserPreferences(username);
 
+        // Actualizar la malla según la carrera del usuario
         if (typeof updateMallaDisplay === 'function') {
+            console.log('Actualizando malla para carrera:', user.career);
             updateMallaDisplay();
-        loadSavedProgress();
-    }
+        }
 
-    return true;
+        loadSavedProgress();
+        return true;
+    }
+    return false;
 }
 
 // Función para verificar si hay un usuario logueado
 function checkLoggedInUser() {
     const currentUser = localStorage.getItem('currentUser');
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const user = users.find(u => u.username === currentUser);
-
-    // Redirigir si es necesario
-    if (window.location.pathname.includes('admin.html') && (!user || !user.isAdmin)) {
-        window.location.replace('index.html');
+    if (!currentUser) {
+        document.getElementById('loginModal').style.display = 'flex';
+        document.getElementById('mainContent').style.display = 'none';
         return false;
     }
 
-    // Actualizar interfaz
-    const loginModal = document.getElementById('loginModal');
-    const mainContent = document.getElementById('mainContent');
-    const adminButton = document.getElementById('adminButton');
-    
-    if (loginModal) loginModal.style.display = currentUser ? 'none' : 'flex';
-    if (mainContent) mainContent.style.display = currentUser ? 'block' : 'none';
-    if (adminButton && user) {
-        adminButton.style.display = user.isAdmin ? 'flex' : 'none';
-    }
-
-    if (!currentUser) return false;
-
-    // Configurar interfaz para usuario logueado
+    // Cargar preferencias del usuario actual
     loadUserPreferences(currentUser);
+    
+    // Actualizar nombre en la interfaz
     updateUserDisplay(currentUser);
 
+    // Actualizar la malla según la carrera del usuario
     if (typeof updateMallaDisplay === 'function') {
+        console.log('Actualizando malla en checkLoggedInUser');
         updateMallaDisplay();
     }
 
@@ -119,7 +108,7 @@ function handleLogout() {
     window.location.reload();
 }
 
-// Inicializar usuario admin por defecto
+// Inicializar usuario admin por defecto si no existe ningún usuario
 function initializeDefaultAdmin() {
     const users = JSON.parse(localStorage.getItem('users') || '[]');
     if (users.length === 0) {
@@ -142,7 +131,6 @@ function initializeDefaultAdmin() {
 // Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
     initializeDefaultAdmin();
-    checkLoggedInUser();
     
     // Login form
     const loginForm = document.getElementById('loginForm');
@@ -170,19 +158,68 @@ document.addEventListener('DOMContentLoaded', () => {
             e.stopPropagation();
             profileMenu.classList.toggle('active');
         });
+    }
 
     // Cerrar menú al hacer click fuera
     document.addEventListener('click', (e) => {
-            if (!profileMenu.contains(e.target)) {
+        if (profileMenu && !profileMenu.contains(e.target)) {
             profileMenu.classList.remove('active');
         }
     });
-    }
 
     // Botón de logout
     const logoutButton = document.getElementById('logoutButton');
     if (logoutButton) {
         logoutButton.addEventListener('click', handleLogout);
+    }
+
+    // Botón de personalizar
+    const customizeButton = document.getElementById('customizeButton');
+    const colorModal = document.getElementById('colorModal');
+    
+    if (customizeButton && colorModal) {
+        customizeButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            colorModal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            if (profileMenu) {
+                profileMenu.classList.remove('active');
+            }
+
+        });
+    }
+
+    // Cerrar modal de colores
+    const closeColorModal = document.getElementById('closeColorModal');
+    if (closeColorModal && colorModal) {
+        closeColorModal.addEventListener('click', () => {
+            colorModal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        });
+    }
+
+    // Botón de admin
+    const adminButton = document.getElementById('adminButton');
+    if (adminButton) {
+        adminButton.addEventListener('click', () => {
+            window.location.href = 'admin.html';
+        });
+    }
+
+    // Verificar usuario logueado
+    if (checkLoggedInUser()) {
+        const currentUser = localStorage.getItem('currentUser');
+        updateUserDisplay(currentUser);
+        
+        // Verificar si es admin y configurar botón
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        const user = users.find(u => u.username === currentUser);
+        const adminButton = document.getElementById('adminButton');
+        if (user && user.isAdmin && adminButton) {
+            adminButton.style.display = 'flex';
+            adminButton.onclick = () => window.location.href = 'admin.html';
+        }
     }
 });
 
